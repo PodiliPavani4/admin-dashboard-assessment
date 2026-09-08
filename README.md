@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Scalable Admin Dashboard Architecture
 
-## Getting Started
+A high-performance, data-heavy admin dashboard built with **Next.js (App Router)**, **React**, **Tailwind CSS**, and **Recharts**, designed following modular design system principles and clean state separation.
 
-First, run the development server:
+---
 
+
+
+### 1. Installation
+Clone the repository and install project dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd admin-dashboard-assessment
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Configuration
+Copy the `.env.example` file:
+```bash
+cp .env.example .env.local
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 3. Running the Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+##  Technology Stack & Rationale
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework**: **Next.js 16 (App Router)**
+  - *Why*: Provides file-based routing, server components, seamless layout nesting, and optimal client bundle performance.
+- **Styling**: **Tailwind CSS**
+  - *Why*: Enables rapid component styling and uniform design system tokens (matching Figma Purple UI kit).
+- **Data Visualization**: **Recharts**
+  - *Why*: Composable, responsive SVG chart primitives tailored for analytics dashboards.
+- **Iconography**: **Lucide React**
+  - *Why*: Consistent, lightweight, accessible icon set.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Repository Structure & Scalability Guide
 
-## Deploy on Vercel
+```
+src/
+├── app/                        # Next.js App Router routes & layouts
+│   ├── (dashboard)/            # Route group for authenticated layout shell
+│   │   ├── layout.js           # Main shell wrapping Sidebar and Topbar
+│   │   ├── dashboard/          # Dashboard Overview page (Cards, Recharts, Quick Actions)
+│   │   ├── users/              # Data Table page (Search, Sort, Filter, Pagination)
+│   │   │   ├── page.js
+│   │   │   ├── [id]/page.js    # User Detail & Edit Form
+│   │   │   └── new/page.js     # User Creation Form
+│   │   └── settings/           # Settings page (Profile, RBAC roles)
+│   ├── globals.css             # Tailwind CSS & design system reset
+│   └── layout.js               # Root layout wrapper
+├── components/                 # Reusable UI component design system
+│   ├── ui/                     # Primitives (Button, Card, Input, Select, Modal)
+│   ├── data-display/           # Table wrappers (DataTable, TablePagination, TableFilter)
+│   ├── charts/                 # Recharts wrappers (LineChartCard, BarChartCard)
+│   └── layout/                 # Navigation shell (Sidebar, Topbar, MobileNav, PageHeader)
+├── context/                    # React Context providers
+│   └── AuthContext.js          # Role-Based Access Control (Admin, Manager, Viewer)
+├── hooks/                      # Reusable custom React hooks
+│   ├── useMockFetch.js         # Server State data fetcher with loading/error handling
+│   └── useTableState.js        # Table UI State (sorting, filtering, pagination)
+└── lib/                        # Utility functions & Mock API layer
+    ├── mockApi.js              # In-memory CRUD database with latency
+    ├── mockData.js             # Initial seed data
+    └── utils.js                # Helper functions (formatDate)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 📍 Where Would a New Feature Go?
+If adding a new domain feature (e.g., **Inventory Management**):
+1. **Mock Data & Service API**: Add seed dataset and CRUD endpoints in `src/lib/mockApi.js`.
+2. **Feature Components**: Create modular widgets under `src/components/inventory/` using base UI components (`Card`, `DataTable`, `Select`).
+3. **App Route**: Add page under `src/app/(dashboard)/inventory/page.js`.
+4. **Navigation Link**: Register item in `menuSections` array inside `src/components/layout/Sidebar.js`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🔄 State Management Architecture
+
+A key architectural pattern of this project is the **strict separation between Server State and UI State**:
+
+### 1. Server State (`useMockFetch`)
+- Responsible for fetching, caching, loading spinners, error states, and mutation revalidations.
+- Decoupled from rendering components so pages can handle network latency and retries cleanly.
+- `mockApi.js` simulates async REST behavior (`300-500ms` delay).
+
+### 2. UI State (`useTableState`, `AuthContext`)
+- **Table Controls**: `useTableState` manages active page, sort column, sort direction, category filters, and search query.
+- **Role-Based Access (RBAC)**: `AuthContext` tracks the active demo role (`Admin`, `Manager`, `Viewer`) to dynamically restrict action buttons or lock form inputs.
+
+---
+
+##  Features Built & What Is Not
+
+###  What Is Completed
+- [x] **Dashboard Overview**: Metrics cards with trend badges, Recharts line and bar charts, user action breakdown, quick actions.
+- [x] **Data Table Page**: Full directory view with search input, status/role filtering, multi-column sorting, row pagination, and deletion modal.
+- [x] **Detail & Edit Form Page**: User record loading, client form validation, live interactive profile card preview.
+- [x] **New User Creation Page**: Responsive form with field validation and dataset append.
+- [x] **Settings Page**: Multi-tab management for Profile, RBAC Role switcher.
+- [x] **Role-Based Navigation**: Interactive role switcher (`Admin`, `Manager`, `Viewer`) in topbar and settings demonstrating read-only view locks.
+- [x] **Unit Tests**: Automated tests for `DataTable` component and `useTableState` hook.
+
+### What Is Not / Future Extensions
+- Persistent backend API database (currently backed by `localStorage` + mock service layer).
+- OAuth 2.0 / JWT backend authentication flow (simulated via client AuthContext role selector).
